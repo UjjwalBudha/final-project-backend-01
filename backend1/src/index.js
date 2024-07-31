@@ -43,7 +43,7 @@ async function getSecret(secretName) {
       host: projectSecret.host,
       user: rdsSecret.username,
       password: rdsSecret.password,
-      database: projectSecret.dbname1,
+      database: projectSecret.dbname,
     });
 
     db.connect((err) => {
@@ -172,8 +172,8 @@ async function getSecret(secretName) {
       });
     });
 
-    app.listen(8082, () => {
-      console.log(`Listening on port 8082`);
+    app.listen(8081, () => {
+      console.log(`Listening on port 8081`);
     });
   } catch (error) {
     console.error("Error initializing application:", error);
