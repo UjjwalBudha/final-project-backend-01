@@ -1,0 +1,10 @@
+repo_url: "https://github.com/UjjwalBudha/final-project-backend-01.git"
+repo_dest: "/home/ubuntu/final-project-backend-01"
+backend1_dir: "{{ repo_dest }}/backend1"
+backend2_dir: "{{ repo_dest }}/backend2"
+nginx_conf_src: "nginx.conf.j2"
+nginx_conf_dest: "/etc/nginx/sites-available/default"
+required_packages:
+    - npm
+    - nginx
+    - mysql-client

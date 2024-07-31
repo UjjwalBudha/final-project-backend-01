@@ -1,0 +1,15 @@
+repo_url: "https://github.com/UjjwalBudha/final-project-frontend-01.git"
+repo_path: "/home/ubuntu/final-project-frontend-01"
+frontend1_path: "/home/ubuntu/final-project-frontend-01/frontend1"
+frontend2_path: "/home/ubuntu/final-project-frontend-01/frontend2"
+api_url_frontend1: "http://backend-alb-dev-928641296.us-east-1.elb.amazonaws.com/products"
+api_url_frontend2: "http://backend-alb-dev-928641296.us-east-1.elb.amazonaws.com/products01"
+pm2_frontend1: "frontend-server1"
+pm2_frontend2: "frontend-server2"
+nginx_conf_src: "nginx.conf.j2"
+nginx_conf_dest: "/etc/nginx/sites-available/default"
+dependencies:
+  - nodejs
+  - npm
+  - mysql-server
+  - nginx

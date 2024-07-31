@@ -1,0 +1,83 @@
+- name: Update the system
+  apt:
+    update_cache: yes
+    upgrade: dist
+
+- name: Install required packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ required_packages }}"
+
+- name: Check if repository directory exists
+  stat:
+    path: "{{ repo_dest }}"
+  register: repo_dir
+
+- name: Remove existing repository if it exists
+  file:
+    path: "{{ repo_dest }}"
+    state: absent
+  when: repo_dir.stat.exists
+
+- name: Clone GitHub repository
+  git:
+    repo: "{{ repo_url }}"
+    dest: "{{ repo_dest }}"
+    update: yes
+
+- name: Install npm packages for backend1
+  command: npm install
+  args:
+    chdir: "{{ backend1_dir }}"
+  become: true
+
+- name: Install npm packages for backend2
+  command: npm install
+  args:
+    chdir: "{{ backend2_dir }}"
+  become: true
+
+- name: Install pm2
+  npm:
+    name: pm2
+    global: yes
+
+- name: Delete all existing PM2 processes
+  command: pm2 delete all
+  ignore_errors: yes
+
+- name: Start backend1 application with pm2
+  command: pm2 start index.js --name backend1
+  args:
+    chdir: "{{ backend1_dir }}/src"
+  become: true
+
+- name: Start backend2 application with pm2
+  command: pm2 start index.js --name backend2
+  args:
+    chdir: "{{ backend2_dir }}/src"
+  become: true
+
+- name: Deploy Nginx configuration
+  template:
+    src: "{{ nginx_conf_src }}"
+    dest: "{{ nginx_conf_dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Test Nginx configuration
+  command: nginx -t
+  register: nginx_test
+  ignore_errors: yes
+
+- name: Fail if Nginx configuration test fails
+  fail:
+    msg: "Nginx configuration test failed"
+  when: nginx_test.rc != 0
+
+- name: Restart Nginx to apply the changes
+  service:
+    name: nginx
+    state: restarted

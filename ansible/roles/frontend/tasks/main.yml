@@ -1,0 +1,101 @@
+- name: Update the system
+  apt:
+    update_cache: yes
+    upgrade: dist
+
+- name: Install required dependencies
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ dependencies }}"
+
+- name: Install pm2 using npm
+  npm:
+    name: pm2
+    global: yes
+
+- name: Check if repository directory exists
+  stat:
+    path: "{{ repo_path }}"
+  register: repo_dir
+
+- name: Remove existing repository if it exists
+  file:
+    path: "{{ repo_path }}"
+    state: absent
+  when: repo_dir.stat.exists
+
+- name: Clone GitHub repository
+  git:
+    repo: "{{ repo_url }}"
+    dest: "{{ repo_path }}"
+    update: yes
+
+- name: Install npm packages for frontend1
+  command: npm install
+  args:
+    chdir: "{{ frontend1_path }}"
+  become: true
+
+- name: Install npm packages for frontend2
+  command: npm install
+  args:
+    chdir: "{{ frontend2_path }}"
+  become: true
+
+- name: Add API to config.js in frontend1
+  lineinfile:
+    path: "{{ frontend1_path }}/config.js"
+    line: "export const apiUrl = '{{ api_url_frontend1 }}';"
+    create: yes
+
+- name: Add API to config.js in frontend2
+  lineinfile:
+    path: "{{ frontend2_path }}/config.js"
+    line: "export const apiUrl = '{{ api_url_frontend2 }}';"
+    create: yes
+
+- name: Delete all existing PM2 processes
+  command: pm2 delete all
+  ignore_errors: yes
+
+- name: Start frontend1 application with pm2
+  command: pm2 start http-server --name "{{ pm2_frontend1 }}" -- -p 3000
+  args:
+    chdir: "{{ frontend1_path }}"
+  become: true
+
+- name: Start frontend2 application with pm2
+  command: pm2 start http-server --name "{{ pm2_frontend2 }}" -- -p 3001
+  args:
+    chdir: "{{ frontend2_path }}"
+  become: true
+  environment:
+    PORT: 3001
+
+- name: Start frontend2 application with pm2
+  command: pm2 restart all
+  become: true
+
+- name: Deploy Nginx configuration
+  template:
+    src: "{{ nginx_conf_src }}"
+    dest: "{{ nginx_conf_dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Test Nginx configuration
+  command: nginx -t
+  register: nginx_test
+  ignore_errors: yes
+
+- name: Fail if Nginx configuration test fails
+  fail:
+    msg: "Nginx configuration test failed"
+  when: nginx_test.rc != 0
+
+- name: Restart Nginx to apply the changes
+  service:
+    name: nginx
+    state: restarted
